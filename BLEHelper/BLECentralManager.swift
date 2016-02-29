@@ -18,7 +18,7 @@ class BLECentralManager: NSObject {
     typealias DiscoverServicesHandler = (peripheral: CBPeripheral, error: NSError?) -> (Void)
     typealias DiscoverCharacteristicsForServiceHandler = (peripheral: CBPeripheral, service: CBService, error: NSError?) -> (Void)
     typealias FetchCharacteristicCompletion = (characteristic: CBCharacteristic) -> (Void)
-    typealias ReceiveDataHandler = (data: NSData?) -> (Void)
+    typealias ReceiveDataHandler = (characteristic: CBCharacteristic , data: NSData?) -> (Void)
     typealias ReadResponse = (success: Bool) -> (Void)
     typealias SetNotifyResponse = (success: Bool) -> (Void)
     typealias WriteResponse = (success: Bool) -> (Void)
@@ -263,7 +263,7 @@ extension BLECentralManager: CBPeripheralDelegate {
         }
         prettyLog()
         self.didReadResponse?(success: true)
-        self.didReceiveDataHandler?(data: characteristic.value)
+        self.didReceiveDataHandler?(characteristic: characteristic, data: characteristic.value)
     }
     
     func peripheral(peripheral: CBPeripheral, didWriteValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {

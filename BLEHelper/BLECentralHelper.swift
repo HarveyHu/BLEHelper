@@ -11,7 +11,7 @@ import CoreBluetooth
 
 public protocol BLECentralHelperDelegate {
     func bleDidDisconenctFromPeripheral()
-    func bleCentralDidReceiveData(data: NSData?)
+    func bleCentralDidReceiveData(characteristic: CBCharacteristic, data: NSData?)
 }
 
 public class BLECentralHelper {
@@ -25,8 +25,8 @@ public class BLECentralHelper {
         // Set centralManager
         let bleCentralQueue: dispatch_queue_t = dispatch_queue_create("forBLECentralManagerOnly", DISPATCH_QUEUE_SERIAL)
         centralManager = BLECentralManager(queue: bleCentralQueue)
-        centralManager.didReceiveDataHandler = {[weak self] (data: NSData?) -> (Void) in
-            self?.delegate?.bleCentralDidReceiveData(data)
+        centralManager.didReceiveDataHandler = {[weak self] (characteristic:CBCharacteristic, data: NSData?) -> (Void) in
+            self?.delegate?.bleCentralDidReceiveData(characteristic, data: data)
         }
         centralManager.didDisconnectPeripheralCompletion = {[weak self] (peripheral, error) -> (Void) in
             self?.delegate?.bleDidDisconenctFromPeripheral()
@@ -85,7 +85,7 @@ public class BLECentralHelper {
     
     //MARK: - BLE Operation
     //read
-    public func readValueWithServiceUUID(serviceUUID: String, characteristicUUID: String, response: (success: Bool)-> (Void)) {
+    public func readValue(serviceUUID: String, characteristicUUID: String, response: (success: Bool)-> (Void)) {
         guard let peripheral = self.peripheral else {
             prettyLog("error: self.peripheral = nil")
             return
@@ -100,7 +100,7 @@ public class BLECentralHelper {
     }
     
     //notify
-    public func enableNotifications(enable: Bool, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
+    public func enableNotification(enable: Bool, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
         guard let peripheral = self.peripheral else {
             prettyLog("error: self.peripheral = nil")
             return
