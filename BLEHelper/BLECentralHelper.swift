@@ -11,7 +11,7 @@ import CoreBluetooth
 
 public protocol BLECentralHelperDelegate {
     func bleDidDisconenctFromPeripheral()
-    func bleCentralDidReceiveData(characteristic: CBCharacteristic, data: NSData?)
+    func bleCentralDidReceiveData(data: NSData?, peripheral: CBPeripheral,characteristic: CBCharacteristic)
 }
 
 public class BLECentralHelper {
@@ -25,8 +25,8 @@ public class BLECentralHelper {
         // Set centralManager
         let bleCentralQueue: dispatch_queue_t = dispatch_queue_create("forBLECentralManagerOnly", DISPATCH_QUEUE_SERIAL)
         centralManager = BLECentralManager(queue: bleCentralQueue)
-        centralManager.didReceiveDataHandler = {[weak self] (characteristic:CBCharacteristic, data: NSData?) -> (Void) in
-            self?.delegate?.bleCentralDidReceiveData(characteristic, data: data)
+        centralManager.didReceiveDataHandler = {[weak self] (data: NSData?, peripheral: CBPeripheral ,characteristic: CBCharacteristic) -> (Void) in
+            self?.delegate?.bleCentralDidReceiveData(data ,peripheral: peripheral, characteristic: characteristic)
         }
         centralManager.didDisconnectPeripheralCompletion = {[weak self] (peripheral, error) -> (Void) in
             self?.delegate?.bleDidDisconenctFromPeripheral()
