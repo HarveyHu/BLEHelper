@@ -8,7 +8,7 @@
 
 import Foundation
 
-func prettyLog(message: String = "") {
-    let file:String = __FILE__, function:String = __FUNCTION__, line:Int = __LINE__
-    print("[\((file as NSString).lastPathComponent)(\(line)) function:\(function)] \(message)")
+func prettyLog(message: String = "", file:String = __FILE__, function:String = __FUNCTION__, line:Int = __LINE__) {
+    
+    print("\((file as NSString).lastPathComponent) (\(line)) \(function) \(message)")
 }

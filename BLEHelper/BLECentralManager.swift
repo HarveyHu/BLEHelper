@@ -83,6 +83,7 @@ class BLECentralManager: NSObject {
     *  @Discoverying
     */
     func scanWithServiceUUID(serviceUUID: String?,  discoverPeripheralCompletion: DiscoverPeripheralCompletion) {
+        prettyLog()
         self.didDiscoverPeripheralCompletion = discoverPeripheralCompletion
         
         //callack on didDiscoverPeripheral: delegate
@@ -90,7 +91,7 @@ class BLECentralManager: NSObject {
             let uuids = [CBUUID.init(string: uuidString)]
             centralManager?.scanForPeripheralsWithServices(uuids, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
         } else {
-            centralManager?.scanForPeripheralsWithServices(nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+            centralManager?.scanForPeripheralsWithServices(nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
         }
     }
     
@@ -102,14 +103,21 @@ class BLECentralManager: NSObject {
     /*
     *  @Connecting
     */
-    func connectPeripheralByDeviceUUID(deviceUUID: NSUUID, completion:ConnectPeripheralCompletion?) {
+    func connect(peripheral: CBPeripheral, completion: ConnectPeripheralCompletion?) {
         self.didConnectPeripheralCompletion = completion
-        centralManager?.stopScan()
+        centralManager?.connectPeripheral(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(bool: true)])
+    }
+    func retrievePeripheralByDeviceUUID(deviceUUID: NSUUID, completion: ConnectPeripheralCompletion?) {
+        self.didConnectPeripheralCompletion = completion
         
         if let peripherals = centralManager?.retrievePeripheralsWithIdentifiers([deviceUUID]) {
             for peripheral in peripherals
             {
-                centralManager?.connectPeripheral(peripheral, options: nil)
+                if peripheral.identifier == deviceUUID {
+                    prettyLog("connect with deviceUUID:\(deviceUUID)")
+                    centralManager?.connectPeripheral(peripheral, options: nil)
+                    break
+                }
             }
         }
     }
@@ -124,15 +132,20 @@ class BLECentralManager: NSObject {
     *  @Exploring
     */
     func fetchCharacteristic(peripheral:CBPeripheral, serviceUUID: String, characteristicUUID: String, completion: FetchCharacteristicCompletion) {
+        prettyLog()
+        
         //set callback
+        self.didFetchCharacteristicCompletion = completion
         self.didDiscoverServicesHandler = {(peripheral: CBPeripheral, didDiscoverServices error: NSError?) -> (Void) in
             if error != nil {
                 prettyLog("error:" + error!.description)
                 return
             }
+            prettyLog()
             
             if let services = peripheral.services {
                 for service in services {
+                    prettyLog("[debug] serviceUUID:\(service.UUID.UUIDString) input UUID:\(serviceUUID)")
                     if service.UUID.UUIDString == serviceUUID {
                         peripheral.discoverCharacteristics([CBUUID.init(string: characteristicUUID)], forService: service)
                     } else {
@@ -146,6 +159,7 @@ class BLECentralManager: NSObject {
                 prettyLog("error:" + error!.description)
                 return
             }
+            prettyLog()
             
             if let characteristics = service.characteristics {
                 for characteristic in characteristics {
@@ -172,7 +186,7 @@ class BLECentralManager: NSObject {
     //writing
     func writeValueWithData(peripheral:CBPeripheral, characteristic: CBCharacteristic, data: NSData, response:WriteResponse?) {
         self.didWriteResponse = response
-        peripheral.writeValue(data, forCharacteristic: characteristic, type: .WithResponse)
+        peripheral.writeValue(data, forCharacteristic: characteristic, type: .WithoutResponse)
     }
     
     //notify
@@ -180,6 +194,7 @@ class BLECentralManager: NSObject {
         let p = characteristic.isNotifying
         let q = onOrOff
         if (p || q) && !(p && q) {
+            self.didSetNotifyResponse = response
             peripheral.setNotifyValue(onOrOff, forCharacteristic: characteristic)
         }
     }
@@ -224,10 +239,13 @@ extension BLECentralManager: CBCentralManagerDelegate {
     }
     
     func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
+        prettyLog("peripheral:\(peripheral)\nadvertisementData\(advertisementData)\n\(RSSI)")
         didDiscoverPeripheralCompletion?(peripheral: peripheral, advertisementData: advertisementData, RSSI: RSSI)
     }
     
     func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
+        prettyLog()
+        peripheral.delegate = self
         didConnectPeripheralCompletion?(peripheral: peripheral, error: nil)
     }
     
