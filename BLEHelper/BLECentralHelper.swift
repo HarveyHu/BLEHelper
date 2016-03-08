@@ -10,16 +10,17 @@ import Foundation
 import CoreBluetooth
 
 public protocol BLECentralHelperDelegate {
-    func bleDidDisconenctFromPeripheral()
+    func bleDidDisconenctFromPeripheral(peripheral: CBPeripheral)
     func bleCentralDidReceiveData(data: NSData?, peripheral: CBPeripheral,characteristic: CBCharacteristic)
 }
 
 public class BLECentralHelper {
     public var delegate: BLECentralHelperDelegate?
     let centralManager: BLECentralManager
-    var peripheralList: [CBPeripheral] = [CBPeripheral] ()
+    var peripheralList = [CBPeripheral] ()
     var peripheral: CBPeripheral?
     var timer: NSTimer?
+    var scanCompletion: ((peripheralList: [CBPeripheral])->(Void))?
     
     public init() {
         // Set centralManager
@@ -32,7 +33,7 @@ public class BLECentralHelper {
         }
         centralManager.didDisconnectPeripheralCompletion = {[weak self] (peripheral, error) -> (Void) in
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                self?.delegate?.bleDidDisconenctFromPeripheral()
+                self?.delegate?.bleDidDisconenctFromPeripheral(peripheral)
             })
         }
     }
@@ -42,11 +43,13 @@ public class BLECentralHelper {
         self.peripheral = nil
         self.timer?.invalidate()
         self.timer = nil
+        self.scanCompletion = nil
     }
     
     dynamic func scanTimeout() {
         prettyLog("Scan Timeout")
         self.centralManager.stopScan()
+        scanCompletion?(peripheralList: self.peripheralList)
     }
     
     //MARK - BLE Scanning
@@ -54,14 +57,15 @@ public class BLECentralHelper {
         prettyLog()
         self.timer?.invalidate()
         centralManager.stopScan()
+        
+        //self.peripheralList.removeAll()
+        scanCompletion = handler
+        
         self.timer = NSTimer.scheduledTimerWithTimeInterval(seconds, target: self, selector: Selector("scanTimeout"), userInfo: nil, repeats: false)
         
         centralManager.scanWithServiceUUID(serviceUUID) {[weak self] (peripheral, advertisementData, RSSI) -> (Void) in
-            if self?.peripheralList.filter({$0 != peripheral}).count > 0 || self?.peripheralList.count == 0 {
+            if self?.peripheralList.filter({$0.identifier.UUIDString == peripheral.identifier.UUIDString}).count == 0 || self?.peripheralList.count == 0 {
                 self?.peripheralList.append(peripheral)
-                if let peripherals = self?.peripheralList {
-                    handler?(devices: peripherals)
-                }
             }
         }
     }
@@ -70,29 +74,32 @@ public class BLECentralHelper {
     public func connect(peripheral: CBPeripheral, completion: ((peripheral: CBPeripheral, error: NSError?) -> (Void))?) {
         prettyLog()
         self.timer?.invalidate()
-        //centralManager.stopScan()
+        centralManager.stopScan()
         
         centralManager.connect(peripheral, completion: {[weak self] (peripheral: CBPeripheral, error: NSError?) in
             
             if let strongSelf = self {
                 strongSelf.peripheral = peripheral
-                strongSelf.centralManager.stopScan()
             }
             completion?(peripheral: peripheral, error: error)
             })
     }
+    
     public func retrieve(deviceUUID deviceUUIDString: String, completion: ((peripheral: CBPeripheral, error: NSError?) -> (Void))?) {
         prettyLog()
         self.timer?.invalidate()
         centralManager.stopScan()
         
         if let deviceUUID = NSUUID.init(UUIDString: deviceUUIDString) {
-            centralManager.retrievePeripheralByDeviceUUID(deviceUUID, completion: {[weak self] (peripheral: CBPeripheral, error: NSError?) in
-                if let strongSelf = self {
-                    strongSelf.peripheral = peripheral
-                }
-                completion?(peripheral: peripheral, error: error)
-                })
+            //must scan to get peripheral instance
+            self.scan(1.0, serviceUUID: nil) {[weak self] (devices) -> (Void) in
+                self?.centralManager.retrievePeripheralByDeviceUUID(deviceUUID, completion: {[weak self] (peripheral: CBPeripheral, error: NSError?) in
+                    if let strongSelf = self {
+                        strongSelf.peripheral = peripheral
+                    }
+                    completion?(peripheral: peripheral, error: error)
+                    })
+            }
         } else {
             prettyLog("deviceUUID is wrong")
         }

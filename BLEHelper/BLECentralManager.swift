@@ -38,6 +38,7 @@ class BLECentralManager: NSObject {
     
     //MARK: - Basic Settings
     private var centralManager: CBCentralManager?
+    private var characteristicMap = [String : CBCharacteristic]()
     
     required init(queue: dispatch_queue_t) {
         super.init()
@@ -107,6 +108,7 @@ class BLECentralManager: NSObject {
         self.didConnectPeripheralCompletion = completion
         centralManager?.connectPeripheral(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(bool: true)])
     }
+    
     func retrievePeripheralByDeviceUUID(deviceUUID: NSUUID, completion: ConnectPeripheralCompletion?) {
         self.didConnectPeripheralCompletion = completion
         
@@ -115,7 +117,7 @@ class BLECentralManager: NSObject {
             {
                 if peripheral.identifier == deviceUUID {
                     prettyLog("connect with deviceUUID:\(deviceUUID)")
-                    centralManager?.connectPeripheral(peripheral, options: nil)
+                    centralManager?.connectPeripheral(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(bool: true)])
                     break
                 }
             }
@@ -123,6 +125,7 @@ class BLECentralManager: NSObject {
     }
     func disconnect(peripheral: CBPeripheral) {
         closeAllNotifications(peripheral)
+        self.characteristicMap.removeAll(keepCapacity: false)
         centralManager?.cancelPeripheralConnection(peripheral)
     }
     
@@ -133,6 +136,11 @@ class BLECentralManager: NSObject {
     */
     func fetchCharacteristic(peripheral:CBPeripheral, serviceUUID: String, characteristicUUID: String, completion: FetchCharacteristicCompletion) {
         prettyLog()
+        if let characteristic = characteristicMap[characteristicUUID] {
+            self.didFetchCharacteristicCompletion = nil
+            completion(characteristic: characteristic)
+            return
+        }
         
         //set callback
         self.didFetchCharacteristicCompletion = completion
@@ -163,10 +171,9 @@ class BLECentralManager: NSObject {
             
             if let characteristics = service.characteristics {
                 for characteristic in characteristics {
+                    self?.characteristicMap[characteristic.UUID.UUIDString] = characteristic
                     if characteristic.UUID.UUIDString == characteristicUUID {
                         self?.didFetchCharacteristicCompletion?(characteristic: characteristic)
-                    } else {
-                        break
                     }
                 }
             }
