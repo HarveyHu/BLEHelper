@@ -53,10 +53,10 @@ self.bleHelper.retrieve(deviceUUID: self.deviceUUIDString!, completion: {(periph
         })
 ```
 
-To read/notify/write:
+To read:
 
 ```swift
-bleHelper.readValue("FFE0", characteristicUUID: "FFE1") { (success) -> (Void) in
+bleHelper.readValue("yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
             prettyLog("is read success: \(success)")
     }
 ```
