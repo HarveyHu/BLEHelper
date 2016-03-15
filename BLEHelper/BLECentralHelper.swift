@@ -10,7 +10,7 @@ import Foundation
 import CoreBluetooth
 
 public protocol BLECentralHelperDelegate {
-    func bleDidDisconenctFromPeripheral(peripheral: CBPeripheral)
+    func bleDidDisconnectFromPeripheral(peripheral: CBPeripheral)
     func bleCentralDidReceiveData(data: NSData?, peripheral: CBPeripheral,characteristic: CBCharacteristic)
 }
 
@@ -33,7 +33,7 @@ public class BLECentralHelper {
         }
         centralManager.didDisconnectPeripheralCompletion = {[weak self] (peripheral, error) -> (Void) in
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                self?.delegate?.bleDidDisconenctFromPeripheral(peripheral)
+                self?.delegate?.bleDidDisconnectFromPeripheral(peripheral)
             })
         }
     }
