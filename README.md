@@ -40,10 +40,10 @@ bleHelper.connect(yourPeripheral) { (peripheral, error) -> (Void) in
         }
 ```
 
-To connect with a device by deviceUUID:
+To connect with a device by deviceUUID string (peripheral.identifier):
 
 ```swift
-self.bleHelper.retrieve(deviceUUID: self.targetDeviceUUID!, completion: {(peripheral, error) -> (Void) in
+self.bleHelper.retrieve(deviceUUID: self.deviceUUIDString!, completion: {(peripheral, error) -> (Void) in
             if error != nil {
                 prettyLog("error: \(error?.description)")
                 completion?(success: false)
