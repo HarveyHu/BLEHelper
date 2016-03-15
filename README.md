@@ -72,8 +72,8 @@ bleHelper.enableNotification(true, serviceUUID: "yourServiceUUID", characteristi
 To write:
 
 ```swift
-let command = 
-if let data = yourCommand.dataUsingEncoding(NSUTF8StringEncoding) {
+let command = "yourCommand"
+if let data = command.dataUsingEncoding(NSUTF8StringEncoding) {
         bleHelper.writeValue(data, serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
             prettyLog("is write success: \(success)")
         }
