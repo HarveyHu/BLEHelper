@@ -87,7 +87,7 @@ There are only two functions of its delegate. In the beginning, you must declare
 Being called when disconnected from peripheral:
 
 ```swift
-func bleDidDisconenctFromPeripheral(peripheral: CBPeripheral) {
+func bleDidDisconnectFromPeripheral(peripheral: CBPeripheral) {
 	//TODO: do something...
 }
 ```
