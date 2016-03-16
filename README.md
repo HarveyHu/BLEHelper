@@ -1,4 +1,4 @@
-[![Travis CI](https://travis-ci.org/HarveyHu/BLEHelper.svg?branch=master)]
+[![Travis CI](https://travis-ci.org/HarveyHu/BLEHelper.svg?branch=master)](https://travis-ci.org/HarveyHu/BLEHelper)
 
 BLEHelper is an open-source framework for iOS, which can help you deal with your Bluetooth Low Energy device in an elegant way.
 
