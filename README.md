@@ -1,6 +1,8 @@
-[![Travis CI](https://travis-ci.org/HarveyHu/BLEHelper.svg?branch=master)](https://travis-ci.org/HarveyHu/BLEHelper)[![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
+# BLEHelper
 
-BLEHelper is an open-source framework for iOS, which can help you deal with your Bluetooth Low Energy device in an elegant way.
+BLEHelper is an elegant way to deal with your Bluetooth Low Energy device. It supports your iDevice to manipulate multiple BLE devices simultaneously.
+
+[![Travis CI](https://travis-ci.org/HarveyHu/BLEHelper.svg?branch=master)](https://travis-ci.org/HarveyHu/BLEHelper)[![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 
 ## Installation
 
@@ -23,7 +25,7 @@ And init it as a property of your class:
 let bleHelper = BLECentralHelper()
 ```
 
-### Operation
+#### Scan
 
 To scan devices nearby, and the completion is on the end:
 
@@ -32,6 +34,7 @@ bleHelper.scan(1.0, serviceUUID: nil) { (devices) -> (Void) in
             //TODO: show your devices
         }
 ```
+#### Connect
 
 To connect with a device by object:
 
@@ -44,7 +47,7 @@ bleHelper.connect(yourPeripheral) { (peripheral, error) -> (Void) in
 To connect with a device by deviceUUID string (peripheral.identifier):
 
 ```swift
-self.bleHelper.retrieve(deviceUUID: self.deviceUUIDString!, completion: {(peripheral, error) -> (Void) in
+self.bleHelper.retrieve(deviceUUIDs: [deviceUUIDString], completion: {(peripheral, error) -> (Void) in
             if error != nil {
                 prettyLog("error: \(error?.description)")
                 completion?(success: false)
@@ -54,10 +57,12 @@ self.bleHelper.retrieve(deviceUUID: self.deviceUUIDString!, completion: {(periph
         })
 ```
 
+#### Operation
+
 To read:
 
 ```swift
-bleHelper.readValue("yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
+bleHelper.readValue("yourDeviceUUID", serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
             prettyLog("is read success: \(success)")
     }
 ```
@@ -65,7 +70,7 @@ bleHelper.readValue("yourServiceUUID", characteristicUUID: "youCharacteristicUUI
 To enable notification:
 
 ```swift
-bleHelper.enableNotification(true, serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
+bleHelper.enableNotification(true, deviceUUID: "yourDeviceUUID", serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
         prettyLog("set notify success: \(success)")
     }
 ```
@@ -75,13 +80,13 @@ To write:
 ```swift
 let command = "yourCommand"
 if let data = command.dataUsingEncoding(NSUTF8StringEncoding) {
-        bleHelper.writeValue(data, serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
+        bleHelper.writeValue(data, deviceUUID: "yourDeviceUUID", serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
             prettyLog("is write success: \(success)")
         }
     }
 ```
 
-### Delegate
+#### Delegate
 
 There are only two functions of its delegate. In the beginning, you must declare your class obeying the protocal: "BLECentralHelperDelegate."
 
@@ -99,10 +104,6 @@ func bleCentralDidReceiveData(data: NSData?, peripheral: CBPeripheral, character
 	//TODO: do something...
 }
 ```
-
-## Future Improving
-
-For now, BLEHelper is only used for single device. I'm going to make it support multi-devices.
 
 ## License
 

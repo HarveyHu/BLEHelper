@@ -6,13 +6,6 @@
 //  Copyright © 2016 HarveyHu. All rights reserved.
 //
 
-//
-//  BLE.swift
-//  eBike
-//
-//  Created by HarveyHu on 3/2/16.
-//  Copyright © 2016 HarveyHu. All rights reserved.
-//
 
 import Foundation
 import BLEHelper
