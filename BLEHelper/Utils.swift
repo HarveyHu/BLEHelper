@@ -8,7 +8,7 @@
 
 import Foundation
 
-func prettyLog(message: String = "", file:String = __FILE__, function:String = __FUNCTION__, line:Int = __LINE__) {
+func prettyLog(message: String = "", file:String = #file, function:String = #function, line:Int = #line) {
     
     print("\((file as NSString).lastPathComponent)(\(line)) \(function) \(message)")
 }

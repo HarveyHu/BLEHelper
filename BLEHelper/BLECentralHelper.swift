@@ -59,7 +59,7 @@ public class BLECentralHelper {
         
         scanCompletion = handler
         
-        self.timer = NSTimer.scheduledTimerWithTimeInterval(seconds, target: self, selector: Selector("scanTimeout"), userInfo: nil, repeats: false)
+        self.timer = NSTimer.scheduledTimerWithTimeInterval(seconds, target: self, selector: #selector(BLECentralHelper.scanTimeout), userInfo: nil, repeats: false)
         
         centralManager.scanWithServiceUUID(serviceUUID) {[weak self] (peripheral, advertisementData, RSSI) -> (Void) in
             if self?.peripheralScanList.filter({$0.identifier.UUIDString == peripheral.identifier.UUIDString}).count == 0 || self?.peripheralScanList.count == 0 {
