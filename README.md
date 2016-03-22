@@ -6,12 +6,35 @@ BLEHelper is an elegant way to deal with your Bluetooth Low Energy device. It su
 
 ## Installation
 
-BLEHelper is available on Carthage. Just add the following to your project Cartfile:
+###CocoaPods
+
+Specify it in your `Podfile`:
 
 ```ruby
-github "HarveyHu/BLEHelper"
+source 'https://github.com/CocoaPods/Specs.git'
+platform :ios, '8.0'
+use_frameworks!
+
+pod 'BLEHelper', '~> 1.0'
 ```
 
+Then, run the following command:
+
+```bash
+$ pod install
+```
+###Carthage
+
+Just add the following to your project Cartfile:
+
+```ruby
+github "HarveyHu/BLEHelper" ~> 1.0.0
+```
+Then, run the following command:
+
+```bash
+$ carthage update --platform iOS
+```
 
 ## Usage
 Use by including the following import:
