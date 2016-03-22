@@ -17,8 +17,8 @@ public protocol BLECentralHelperDelegate {
 public class BLECentralHelper {
     public var delegate: BLECentralHelperDelegate?
     let centralManager: BLECentralManager
-    var peripheralList = [CBPeripheral] ()
-    var peripheral: CBPeripheral?
+    var peripheralScanList = [CBPeripheral] ()
+    public internal(set) var connectedPeripherals = [String: CBPeripheral] ()
     var timer: NSTimer?
     var scanCompletion: ((peripheralList: [CBPeripheral])->(Void))?
     
@@ -40,7 +40,6 @@ public class BLECentralHelper {
     
     deinit {
         self.delegate = nil
-        self.peripheral = nil
         self.timer?.invalidate()
         self.timer = nil
         self.scanCompletion = nil
@@ -49,124 +48,121 @@ public class BLECentralHelper {
     dynamic func scanTimeout() {
         prettyLog("Scan Timeout")
         self.centralManager.stopScan()
-        scanCompletion?(peripheralList: self.peripheralList)
+        scanCompletion?(peripheralList: self.peripheralScanList)
     }
     
-    //MARK - BLE Scanning
+    //MARK - BLE Scan
     public func scan(seconds: Double, serviceUUID: String?, handler:((devices: [CBPeripheral]) -> (Void))?) {
         prettyLog()
         self.timer?.invalidate()
         centralManager.stopScan()
         
-        //self.peripheralList.removeAll()
         scanCompletion = handler
         
         self.timer = NSTimer.scheduledTimerWithTimeInterval(seconds, target: self, selector: Selector("scanTimeout"), userInfo: nil, repeats: false)
         
         centralManager.scanWithServiceUUID(serviceUUID) {[weak self] (peripheral, advertisementData, RSSI) -> (Void) in
-            if self?.peripheralList.filter({$0.identifier.UUIDString == peripheral.identifier.UUIDString}).count == 0 || self?.peripheralList.count == 0 {
-                self?.peripheralList.append(peripheral)
+            if self?.peripheralScanList.filter({$0.identifier.UUIDString == peripheral.identifier.UUIDString}).count == 0 || self?.peripheralScanList.count == 0 {
+                self?.peripheralScanList.append(peripheral)
             }
         }
     }
     
-    //MARK - BLE Connecting
+    //MARK - BLE Connect
     public func connect(peripheral: CBPeripheral, completion: ((peripheral: CBPeripheral, error: NSError?) -> (Void))?) {
-        prettyLog()
+        prettyLog("connect with peripheral: \(peripheral.identifier.UUIDString)")
         self.timer?.invalidate()
         centralManager.stopScan()
         
         centralManager.connect(peripheral, completion: {[weak self] (peripheral: CBPeripheral, error: NSError?) in
             
             if let strongSelf = self {
-                strongSelf.peripheral = peripheral
+                strongSelf.connectedPeripherals.updateValue(peripheral, forKey: peripheral.identifier.UUIDString)
             }
             completion?(peripheral: peripheral, error: error)
-            })
+        })
     }
     
-    public func retrieve(deviceUUID deviceUUIDString: String, completion: ((peripheral: CBPeripheral, error: NSError?) -> (Void))?) {
+    public func retrieve(deviceUUIDs deviceUUIDStrings: [String], completion: ((peripheral: CBPeripheral, error: NSError?) -> (Void))?) {
         prettyLog()
         self.timer?.invalidate()
         centralManager.stopScan()
         
-        if let deviceUUID = NSUUID.init(UUIDString: deviceUUIDString) {
-            //must scan to get peripheral instance
-            self.scan(1.0, serviceUUID: nil) {[weak self] (devices) -> (Void) in
-                self?.centralManager.retrievePeripheralByDeviceUUID(deviceUUID, completion: {[weak self] (peripheral: CBPeripheral, error: NSError?) in
-                    if let strongSelf = self {
-                        strongSelf.peripheral = peripheral
-                    }
-                    completion?(peripheral: peripheral, error: error)
-                    })
+        let deviceUUIDs = deviceUUIDStrings.map { (uuidString) -> NSUUID in
+            return NSUUID.init(UUIDString: uuidString)!
+        }
+        
+        //must scan to get peripheral instance
+        self.scan(1.0, serviceUUID: nil) {[weak self] (devices) -> (Void) in
+            self?.centralManager.retrievePeripheralByDeviceUUID(deviceUUIDs, completion: {[weak self] (peripheral: CBPeripheral, error: NSError?) in
+                if let strongSelf = self {
+                    strongSelf.connectedPeripherals.updateValue(peripheral, forKey: peripheral.identifier.UUIDString)
+                }
+                completion?(peripheral: peripheral, error: error)
+            })
+        }
+    }
+    
+    public func disconnect(deviceUUID: String?) {
+        prettyLog("deviceUUID: \(deviceUUID)")
+        if let uuid = deviceUUID {
+            if let p = self.connectedPeripherals[uuid] {
+                centralManager.disconnect(p)
+                self.connectedPeripherals.removeValueForKey(uuid)
             }
         } else {
-            prettyLog("deviceUUID is wrong")
+            for (_, p) in self.connectedPeripherals {
+                centralManager.disconnect(p)
+            }
+            self.connectedPeripherals.removeAll()
         }
+        self.peripheralScanList.removeAll()
     }
     
-    public func disconnect() {
-        prettyLog()
-        if let p = self.peripheral {
-            centralManager.disconnect(p)
-            self.peripheralList.removeAll()
-        }
-    }
-    
-    public func isConnected() -> Bool {
-        if peripheral?.state == CBPeripheralState.Connected {
+    public func isConnected(deviceUUID: String) -> Bool {
+        if self.connectedPeripherals[deviceUUID]?.state == CBPeripheralState.Connected {
             return true
         }
         return false
     }
     
-    //get DeviceUUID
-    public func getDeviceUUID() -> String? {
-        return peripheral?.identifier.UUIDString
-    }
-    
     //MARK: - BLE Operation
     //read
-    public func readValue(serviceUUID: String, characteristicUUID: String, response: (success: Bool)-> (Void)) {
-        guard let peripheral = self.peripheral else {
-            prettyLog("error: self.peripheral = nil")
+    public func readValue(deviceUUID: String, serviceUUID: String, characteristicUUID: String, response: (success: Bool)-> (Void)) {
+        guard let peripheral = self.connectedPeripherals[deviceUUID] else {
+            prettyLog("error: peripheral = nil")
             return
         }
-        prettyLog()
+        prettyLog("deviceUUID: \(deviceUUID)")
         
         centralManager.fetchCharacteristic(peripheral, serviceUUID: serviceUUID, characteristicUUID: characteristicUUID) {[weak self] (characteristic) -> (Void) in
-            if let p = self?.peripheral {
-                self?.centralManager.readValueFromCharacteristic(p, characteristic: characteristic, completion: response)
-            }
+            self?.centralManager.readValueFromCharacteristic(peripheral, characteristic: characteristic, completion: response)
         }
     }
     
     //notify
-    public func enableNotification(enable: Bool, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
-        guard let peripheral = self.peripheral else {
-            prettyLog("error: self.peripheral = nil")
+    public func enableNotification(enable: Bool, deviceUUID: String, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
+        guard let peripheral = self.connectedPeripherals[deviceUUID] else {
+            prettyLog("error: peripheral = nil")
             return
         }
-        prettyLog()
+        prettyLog("deviceUUID: \(deviceUUID)")
         
         centralManager.fetchCharacteristic(peripheral, serviceUUID: serviceUUID, characteristicUUID: characteristicUUID) {[weak self] (characteristic) -> (Void) in
-            if let p = self?.peripheral {
-                self?.centralManager.setNotificationState(p, turnOn: enable, characteristic: characteristic, response: response)
-            }
+            self?.centralManager.setNotificationState(peripheral, turnOn: enable, characteristic: characteristic, response: response)
         }
     }
+    
     //write
-    public func writeValue(data: NSData, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
-        guard let peripheral = self.peripheral else {
-            prettyLog("error: self.peripheral = nil")
+    public func writeValue(data: NSData, deviceUUID: String, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
+        guard let peripheral = self.connectedPeripherals[deviceUUID] else {
+            prettyLog("error: peripheral = nil")
             return
         }
-        prettyLog()
+        prettyLog("deviceUUID: \(deviceUUID)")
         
         centralManager.fetchCharacteristic(peripheral, serviceUUID: serviceUUID, characteristicUUID: characteristicUUID) {[weak self] (characteristic) -> (Void) in
-            if let p = self?.peripheral {
-                self?.centralManager.writeValueWithData(p, characteristic: characteristic, data: data, response: response)
-            }
+            self?.centralManager.writeValueWithData(peripheral, characteristic: characteristic, data: data, response: response)
         }
     }
 }

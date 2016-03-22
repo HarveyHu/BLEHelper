@@ -38,7 +38,8 @@ class BLECentralManager: NSObject {
     
     //MARK: - Basic Settings
     private var centralManager: CBCentralManager?
-    private var characteristicMap = [String : CBCharacteristic]()
+    // [deviceUUID : [characteristicUUID: CBCharacteristic]]
+    private var deviceCharacteristicMap = [String : [String : CBCharacteristic]]()
     
     required init(queue: dispatch_queue_t) {
         super.init()
@@ -109,23 +110,21 @@ class BLECentralManager: NSObject {
         centralManager?.connectPeripheral(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(bool: true)])
     }
     
-    func retrievePeripheralByDeviceUUID(deviceUUID: NSUUID, completion: ConnectPeripheralCompletion?) {
+    func retrievePeripheralByDeviceUUID(deviceUUIDs: [NSUUID], completion: ConnectPeripheralCompletion?) {
         self.didConnectPeripheralCompletion = completion
         
-        if let peripherals = centralManager?.retrievePeripheralsWithIdentifiers([deviceUUID]) {
+        if let peripherals = centralManager?.retrievePeripheralsWithIdentifiers(deviceUUIDs) {
             for peripheral in peripherals
             {
-                if peripheral.identifier == deviceUUID {
-                    prettyLog("connect with deviceUUID:\(deviceUUID)")
-                    centralManager?.connectPeripheral(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(bool: true)])
-                    break
-                }
+                prettyLog("connect with deviceUUID:\(peripheral.identifier)")
+                centralManager?.connectPeripheral(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(bool: true)])
             }
         }
     }
+    
     func disconnect(peripheral: CBPeripheral) {
         closeAllNotifications(peripheral)
-        self.characteristicMap.removeAll(keepCapacity: false)
+        self.deviceCharacteristicMap.removeValueForKey(peripheral.identifier.UUIDString)
         centralManager?.cancelPeripheralConnection(peripheral)
     }
     
@@ -135,16 +134,17 @@ class BLECentralManager: NSObject {
     *  @Exploring
     */
     func fetchCharacteristic(peripheral:CBPeripheral, serviceUUID: String, characteristicUUID: String, completion: FetchCharacteristicCompletion) {
-        prettyLog()
-        if let characteristic = characteristicMap[characteristicUUID] {
-            self.didFetchCharacteristicCompletion = nil
+        prettyLog("deviceUUID: \(peripheral.identifier.UUIDString)")
+        
+        // if it's found before, use it.
+        if let characteristicMap = deviceCharacteristicMap[peripheral.identifier.UUIDString], characteristic = characteristicMap[characteristicUUID] {
             completion(characteristic: characteristic)
             return
         }
         
         //set callback
         self.didFetchCharacteristicCompletion = completion
-        self.didDiscoverServicesHandler = {(peripheral: CBPeripheral, didDiscoverServices error: NSError?) -> (Void) in
+        self.didDiscoverServicesHandler = {(peripheral: CBPeripheral, error: NSError?) -> (Void) in
             if error != nil {
                 prettyLog("error:" + error!.description)
                 return
@@ -171,7 +171,7 @@ class BLECentralManager: NSObject {
             
             if let characteristics = service.characteristics {
                 for characteristic in characteristics {
-                    self?.characteristicMap[characteristic.UUID.UUIDString] = characteristic
+                    self?.deviceCharacteristicMap[peripheral.identifier.UUIDString] = [characteristic.UUID.UUIDString: characteristic]
                     if characteristic.UUID.UUIDString == characteristicUUID {
                         self?.didFetchCharacteristicCompletion?(characteristic: characteristic)
                     }
@@ -288,6 +288,7 @@ extension BLECentralManager: CBPeripheralDelegate {
         }
         prettyLog()
         self.didReadResponse?(success: true)
+        self.didReadResponse = nil
         self.didReceiveDataHandler?(data: characteristic.value, peripheral: peripheral, characteristic: characteristic)
     }
     
