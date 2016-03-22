@@ -104,6 +104,11 @@ func bleCentralDidReceiveData(data: NSData?, peripheral: CBPeripheral, character
 	//TODO: do something...
 }
 ```
+## Example
+
+Open BLEHelper.xcworkspace with your xcode, and select the Scheme named "BLEHelperExample." 
+
+Run it on your iPhone or iPad!
 
 ## License
 
