@@ -154,7 +154,7 @@ public class BLECentralHelper {
     }
     
     //write
-    public func writeValue(data: NSData, deviceUUID: String, serviceUUID: String, characteristicUUID: String, response:(success: Bool) -> (Void)) {
+    public func writeValue(data: NSData, deviceUUID: String, serviceUUID: String, characteristicUUID: String, withResponse: Bool, response:(success: Bool) -> (Void)) {
         guard let peripheral = self.connectedPeripherals[deviceUUID] else {
             prettyLog("error: peripheral = nil")
             return
@@ -162,7 +162,7 @@ public class BLECentralHelper {
         prettyLog("deviceUUID: \(deviceUUID)")
         
         centralManager.fetchCharacteristic(peripheral, serviceUUID: serviceUUID, characteristicUUID: characteristicUUID) {[weak self] (characteristic) -> (Void) in
-            self?.centralManager.writeValueWithData(peripheral, characteristic: characteristic, data: data, response: response)
+            self?.centralManager.writeValueWithData(peripheral, characteristic: characteristic, data: data, withResponse: withResponse, response: response)
         }
     }
 }

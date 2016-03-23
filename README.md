@@ -12,7 +12,7 @@ Specify it in your `Podfile`:
 
 ```ruby
 source 'https://github.com/CocoaPods/Specs.git'
-platform :ios, '9.0'
+platform :ios, '8.0'
 use_frameworks!
 
 pod 'BLEHelper', '~> 1.0'
@@ -103,7 +103,7 @@ To write:
 ```swift
 let command = "yourCommand"
 if let data = command.dataUsingEncoding(NSUTF8StringEncoding) {
-        bleHelper.writeValue(data, deviceUUID: "yourDeviceUUID", serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID") { (success) -> (Void) in
+        bleHelper.writeValue(data, deviceUUID: "yourDeviceUUID", serviceUUID: "yourServiceUUID", characteristicUUID: "youCharacteristicUUID", withResponse: true) { (success) -> (Void) in
             prettyLog("is write success: \(success)")
         }
     }

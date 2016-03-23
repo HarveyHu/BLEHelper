@@ -191,9 +191,9 @@ class BLECentralManager: NSObject {
     }
     
     //writing
-    func writeValueWithData(peripheral:CBPeripheral, characteristic: CBCharacteristic, data: NSData, response:WriteResponse?) {
+    func writeValueWithData(peripheral:CBPeripheral, characteristic: CBCharacteristic, data: NSData, withResponse: Bool, response: WriteResponse?) {
         self.didWriteResponse = response
-        peripheral.writeValue(data, forCharacteristic: characteristic, type: .WithoutResponse)
+        peripheral.writeValue(data, forCharacteristic: characteristic, type: withResponse ? .WithResponse : .WithoutResponse)
     }
     
     //notify
