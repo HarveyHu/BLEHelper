@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "BLEHelper"
-  s.version      = "1.0.1"
+  s.version      = "1.0.2"
   s.summary      = "An elegant way to deal with your Bluetooth Low Energy device"
   s.homepage     = "https://github.com/HarveyHu/BLEHelper"
   s.license      = "MIT"
